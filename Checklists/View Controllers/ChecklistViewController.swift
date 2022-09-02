@@ -2,38 +2,20 @@
 //  ViewController.swift
 //  Checklists
 //
-//  Created by Jose Sosa on 8/23/22.
-//
+
 
 import Foundation
 import UIKit
 
 class ChecklistViewController: UITableViewController, ItemDetailViewControllerDelegate {
     
-    var items = [ChecklistItem]()
+    var checklist: Checklist!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        navigationController?.navigationBar.prefersLargeTitles = true
-        
-        let item1 = ChecklistItem()
-          item1.text = "Walk the dog"
-          items.append(item1)
-          let item2 = ChecklistItem()
-          item2.text = "Brush my teeth"
-          item2.checked = true
-          items.append(item2)
-          let item3 = ChecklistItem()
-          item3.text = "Learn iOS development"
-          item3.checked = true
-          items.append(item3)
-          let item4 = ChecklistItem()
-          item4.text = "Soccer practice"
-          items.append(item4)
-          let item5 = ChecklistItem()
-          item5.text = "Eat ice cream"
-          items.append(item5)
+        navigationItem.largeTitleDisplayMode = .never
+        title = checklist.name
     }
  
     // MARK: - Navigation
@@ -45,7 +27,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
             let controller = segue.destination as! ItemDetailViewController
             controller.delegate = self
             if let indexPath = tableView.indexPath(for: sender as! UITableViewCell) {
-                controller.itemToEdit = items[indexPath.row]
+                controller.itemToEdit = checklist.items[indexPath.row]
             }
         }
     }
@@ -60,7 +42,6 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         } else {
             label.text = ""
         }
-            
     }
     
     func configureText(for cell: UITableViewCell, with item: ChecklistItem) { // configures text on each field
@@ -70,14 +51,14 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     
     // MARK: - Table View Data Source
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return items.count      // Returns number of rows from the ChecklistViewController (items array)
+        return checklist.items.count      // Returns number of rows from the ChecklistViewController (items array)
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         // Creates a cell according the the prototype cell and returns it
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChecklistItem", for: indexPath)
-        let item = items[indexPath.row]
+        let item = checklist.items[indexPath.row]
 
         configureText(for: cell, with: item)
         configureCheckmark(for: cell, with: item)
@@ -90,44 +71,46 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if let cell = tableView.cellForRow(at: indexPath) {
-            let item = items[indexPath.row]
+            let item = checklist.items[indexPath.row]
             item.checked.toggle()
             configureCheckmark(for: cell, with: item)
         }
         tableView.deselectRow(at: indexPath, animated: true)
+        
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) { // Enables swipe to delete function
-        items.remove(at: indexPath.row)
+        checklist.items.remove(at: indexPath.row)
         
         let indexPaths = [indexPath]
         tableView.deleteRows(at: indexPaths, with: .automatic)
+        
     }
     
-    // MARK: - ItemDetialView Delegates
-    func itemDetialViewControllerDidCancel(_ controller: ItemDetailViewController) { // Methods from ItemDetailView
+    // MARK: - ItemDetailView Delegates
+    func itemDetailViewControllerDidCancel(_ controller: ItemDetailViewController) { // Methods from ItemDetailView
         navigationController?.popViewController(animated: true)                      // Delegate
     }
     
-    func itemDetialViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
-        let newRowIndex = items.count
-        items.append(item)
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
+        let newRowIndex = checklist.items.count
+        checklist.items.append(item)
         
         let indexPath = IndexPath(row: newRowIndex, section: 0)
         let indexPaths = [indexPath]
         tableView.insertRows(at: indexPaths, with: .automatic)
         navigationController?.popViewController(animated: true)
+        
     }
     
-    func itemDetialViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
-        if let index = items.firstIndex(of: item) {
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
+        if let index = checklist.items.firstIndex(of: item) {
             let indexPath = IndexPath(row: index, section: 0)
             if let cell = tableView.cellForRow(at: indexPath) {
                 configureText(for: cell, with: item)
             }
         }
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController(animated: true)        
     }
-    
 }
 

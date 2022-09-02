@@ -2,21 +2,22 @@
 //  AddItemViewController.swift
 //  Checklists
 //
-//  Created by Jose Sosa on 8/24/22.
-//
+
 
 import UIKit
 
 protocol ItemDetailViewControllerDelegate: AnyObject { // custom delegate and methods
-    func itemDetialViewControllerDidCancel(_ controller: ItemDetailViewController)
-    func itemDetialViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem)
-    func itemDetialViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem)
+    func itemDetailViewControllerDidCancel(_ controller: ItemDetailViewController)
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem)
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem)
 }
 
 class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
     
     @IBOutlet weak var textField: UITextField!
     @IBOutlet weak var doneBarButton: UIBarButtonItem!
+    @IBOutlet weak var shouldRemindSwitch: UISwitch!
+    @IBOutlet weak var datePicker: UIDatePicker!
     
     weak var delegate: ItemDetailViewControllerDelegate?
     var itemToEdit: ChecklistItem?
@@ -29,6 +30,8 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
             title = "Edit Item"
             textField.text = item.text
             doneBarButton.isEnabled = true
+            shouldRemindSwitch.isOn = item.shouldRemind
+            datePicker.date = item.dueDate
         }
     }
     
@@ -39,17 +42,36 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
         
     // MARK: - Actions
     @IBAction func cancel() {
-        delegate?.itemDetialViewControllerDidCancel(self)
+        delegate?.itemDetailViewControllerDidCancel(self)
     }
     
     @IBAction func done() { // Determines if a new cell is being created or being edited
         if let item = itemToEdit {
             item.text = textField.text!
-            delegate?.itemDetialViewController(self, didFinishEditing: item)
+            
+            item.shouldRemind = shouldRemindSwitch.isOn
+            item.dueDate = datePicker.date
+            
+            item.scheduleNotification()
+            delegate?.itemDetailViewController(self, didFinishEditing: item)
         } else {
             let item = ChecklistItem()
             item.text = textField.text!
-            delegate?.itemDetialViewController(self, didFinishAdding: item)
+            item.shouldRemind = shouldRemindSwitch.isOn
+            item.dueDate = datePicker.date
+            item.scheduleNotification()
+            delegate?.itemDetailViewController(self, didFinishAdding: item)
+        }
+    }
+    
+    @IBAction func shouldRemindToggled(_ switchControl: UISwitch) {
+        textField.resignFirstResponder()
+        
+        if switchControl.isOn {
+            let center = UNUserNotificationCenter.current()
+            center.requestAuthorization(options: [.alert, .sound]) {_, _ in
+                    // do nothing
+            }
         }
     }
     
@@ -61,9 +83,13 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
     // MARK: - Text Field Delegates
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         let oldText = textField.text!
-        let StringRange = Range(range, in: oldText)!
-        let newText = oldText.replacingCharacters(in: StringRange, with: string)
-        doneBarButton.isEnabled = !newText.isEmpty
+        let stringRange = Range(range, in: oldText)!
+        let newText = oldText.replacingCharacters(in: stringRange, with: string)
+        if newText.isEmpty {
+            doneBarButton.isEnabled = false
+        } else {
+            doneBarButton.isEnabled = true
+        }
         return true
     }
     
@@ -71,4 +97,5 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
       doneBarButton.isEnabled = false
       return true
     }
+
 }
